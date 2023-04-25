@@ -27,11 +27,10 @@ const remove = async (response, id) => {
 
 const update = async (response, userData, id) => {
   await query("update users set ? where id=?", [userData, id]);
-  console.log("user updated");
   return;
-//   return response.status(200).json({
-//     msg: "user updated successfully",
-//   });
+  //   return response.status(200).json({
+  //     msg: "user updated successfully",
+  //   });
 };
 
 module.exports = { remove, find, insert, update };

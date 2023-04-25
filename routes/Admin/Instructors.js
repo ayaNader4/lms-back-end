@@ -10,7 +10,7 @@ const checkEmail = require("../../modules/checkEmail.js");
 const admin = require("../../middleware/admin");
 const userModule = require("../../modules/user");
 const userAffiliation = require("../../modules/userAffiliation");
-const getAllUsers = require("../../modules/getAllUsers");
+const getAll = require("../../modules/getAll");
 
 // MANAGING INSTRUCTORS
 // ADD
@@ -61,7 +61,8 @@ router.post(
       await userAffiliation.insert(
         response,
         userData.token,
-        request.body.courses
+        request.body.courses,
+        "teaching"
       );
       return;
     } catch (err) {
@@ -89,11 +90,23 @@ router.delete("/delete/:id", authorized, admin, async (request, response) => {
 
 // GET ALL INSTRUCTORS
 router.get("/", authorized, admin, async (request, response) => {
-  await getAllUsers.getAllInstructor(response, request.query.search);
+  try {
+    // 1 - get all instructors from DB;
+    const instructors = await getAll.instructors(
+      response,
+      request.query.search
+    );
+
+    // 2 - return the instructors
+    return response.status(200).json(instructors);
+  } catch (err) {
+    console.log(err);
+    return response.status(400).json(err);
+  }
 });
 
 // router.get("/students", authorized, async (request, response) => {
-//   await getAllUsers.getAllStudents(response, request.query.search);
+//   await getAll.students(response, request.query.search);
 // });
 
 // UPDATE

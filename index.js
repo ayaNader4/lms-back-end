@@ -14,6 +14,8 @@ const auth = require("./routes/Auth");
 //const courses = require("./routes/Courses");
 const manage_instructors = require("./routes/Admin/Instructors");
 const manage_courses = require("./routes/Admin/Courses");
+const student = require("./routes/Student/Courses");
+
 // RUN THE APP
 app.listen(4000, "127.0.0.1", () => {
   console.log("server is running");
@@ -24,3 +26,4 @@ app.use("/auth", auth);
 //app.use('/courses', courses);
 app.use("/admin/manage", manage_instructors);
 app.use("/admin/courses", manage_courses);
+app.use("/", student);
