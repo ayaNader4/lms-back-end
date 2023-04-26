@@ -11,7 +11,7 @@ const insert = async (response, courseData) => {
 
 const find = async (response, id) => {
   const course = await query("select * from courses where id = ?", [id]);
-  console.log(course);
+  // console.log(course);
   if (!course[0]) {
     return response.status(404).json({ message: "Course is not found!" });
   }
@@ -20,7 +20,6 @@ const find = async (response, id) => {
 
 const check = async (response, code, name) => {
   const course = await query("select * from courses where code = ? or name = ?", [code, name]);
-  console.log(course);
   if (course[0]) {
     return response.status(404).json({ message: "Course already exists" });
   }

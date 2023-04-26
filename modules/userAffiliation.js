@@ -12,15 +12,24 @@ const insert = async (response, token, course_name, status) => {
   const user = await query("select id from users where token = ?", [token]);
 
   // insert the pair into user_affiliation
-  await query("insert into user_affiliation set ?", {
-    user_id: user[0].id,
-    course_name: course_name,
-    status: status,
-  });
-  return response
-    .status(200)
-    .json({ message: "User affiliation inserted successfully" });
-  // it only inserts a single course, need to figure out how we would receive multiple courses from the front-end and insert them
+  const course_taken = await query(
+    "select * from user_affiliation where user_id = ? and course_name = ?",
+    [user[0].id, course_name]
+  );
+
+  if (!course_taken[0]) {
+    return await query("insert into user_affiliation set ?", {
+      user_id: user[0].id,
+      course_name: course_name,
+      status: status,
+    });
+  }
+
+  return;
+  // return response
+  //   .status(200)
+  //   .json({ message: "User affiliation inserted successfully" });
+  // // it only inserts a single course, need to figure out how we would receive multiple courses from the front-end and insert them
   //return response.status(200).json({ course: course, user: user });
 };
 
@@ -43,6 +52,5 @@ const update = async (response, id, course_name) => {
   // it only inserts a single course, need to figure out how we would receive multiple courses from the front-end and insert them
   //return response.status(200).json({ course: course, user: user });
 };
-
 
 module.exports = { insert, update };

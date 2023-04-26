@@ -64,7 +64,9 @@ router.post(
         request.body.courses,
         "teaching"
       );
-      return;
+      return response
+        .status(200)
+        .json({ message: "Instructor inserted sucessfully!" });
     } catch (err) {
       console.log(err);
       return response.status(500).json({ err: err });
@@ -158,7 +160,10 @@ router.put(
         request.params.id,
         request.body.courses
       );
-      return;
+
+      return response
+        .status(200)
+        .json({ message: "Instructor successfully updated!" });
     } catch (err) {
       console.log(err);
       response.status(500).json(err);

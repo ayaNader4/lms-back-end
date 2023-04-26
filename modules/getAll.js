@@ -1,8 +1,8 @@
 const util = require("util");
 const connection = require("../db/dbConnection");
+const query = util.promisify(connection.query).bind(connection);
 
 const instructors = async (response, searchReq) => {
-  const query = util.promisify(connection.query).bind(connection);
   let search = "where type = 'instructor' ";
   if (searchReq) {
     search += `and name LIKE '%${searchReq}%''`;
@@ -12,7 +12,6 @@ const instructors = async (response, searchReq) => {
 };
 
 const students = async (response, searchReq) => {
-  const query = util.promisify(connection.query).bind(connection);
   let search = "where type= 'student'";
   if (searchReq) {
     search += `and name LIKE '%${searchReq}%''`;
@@ -22,7 +21,6 @@ const students = async (response, searchReq) => {
 };
 
 const courses = async (response, searchReq) => {
-  const query = util.promisify(connection.query).bind(connection);
   let search = "";
   if (searchReq) {
     search += `where name LIKE '%${searchReq}%''`;
@@ -31,4 +29,46 @@ const courses = async (response, searchReq) => {
   return courses;
 };
 
-module.exports = { instructors, students, courses };
+const registeredCourses = async (id) => {
+  const courses = await query(
+    "SELECT * FROM courses JOIN user_affiliation ON courses.name = user_affiliation.course_name WHERE user_id = ? AND user_affiliation.status = 'active'",
+    id
+  );
+
+  return courses;
+};
+const passedCourses = async (id) => {
+  const courses = await query(
+    "SELECT * FROM courses JOIN user_affiliation ON courses.name = user_affiliation.course_name WHERE user_id = ? AND user_affiliation.status = 'passed'",
+    id
+  );
+
+  return courses;
+};
+//Teached Courses
+const TeachingCourses = async (id) => {
+  const courses = await query(
+    "SELECT * FROM user JOIN user_affiliation ON courses.name = user_affiliation.course_name WHERE user_id = ? AND user_affiliation.status = 'Teaching'",
+    id
+  );
+
+  return courses;
+};
+// get all students in each course
+const courseStudents = async (name) => {
+  const students = await query(
+    "SELECT * FROM `users` JOIN user_affiliation ON users.id = user_affiliation.user_id WHERE user_affiliation.course_name = ?  AND user_affiliation.status='active",name
+  
+  );
+};
+
+module.exports = {
+  instructors,
+  students,
+  courses,
+  registeredCourses: registeredCourses,
+  passedCourses,
+  TeachingCourses,
+  courseStudents,
+  
+};
