@@ -107,9 +107,6 @@ router.get("/", authorized, admin, async (request, response) => {
   }
 });
 
-// router.get("/students", authorized, async (request, response) => {
-//   await getAll.students(response, request.query.search);
-// });
 
 // UPDATE
 router.put(

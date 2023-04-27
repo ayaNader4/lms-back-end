@@ -12,7 +12,7 @@ const courseModule = require("../../modules/course");
 const upload = require("../../middleware/uploadImages");
 const search = require("../../modules/search");
 const coursePrerequisite = require("../../modules/coursePrequisite");
-
+const assignment = require("../../modules/assignment");
 // COURSES
 // ADD
 router.post(
@@ -53,7 +53,7 @@ router.post(
         code: request.body.code,
         description: request.body.description,
         status: "active",
-        prerequisite:request.body.prerequisite,
+        prerequisite: request.body.prerequisite,
       };
 
       // 5 - check if image exists
@@ -62,6 +62,15 @@ router.post(
       // 6 - insert course object into db
       await courseModule.insert(response, courseData);
 
+      // 7 - insert final exam
+      const assignData = {
+        name: "Final Exam",
+        details: "-",
+        total_grade: null,
+        course_name: courseData.name,
+      };
+
+      await assignment.insert(response, data);
       // 7 - return
       return response
         .status(200)

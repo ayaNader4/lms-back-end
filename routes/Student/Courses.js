@@ -14,6 +14,7 @@ const search = require("../../modules/search");
 const getAll = require("../../modules/getAll");
 const { IsEligible } = require("../../modules/coursePrequisite");
 const userAffiliation = require("../../modules/userAffiliation");
+const assignment = require("../../modules/assignment");
 // STUDENTS
 // GET ALL COURSES
 router.get("/courses", async (request, response) => {
@@ -114,20 +115,27 @@ router.post("/course/:id", authorized, async (request, response) => {
 
     // 3- insert course object into db
     if (
-      await userAffiliation.insert(
+      !(await userAffiliation.insert(
         response,
         response.locals.user.token,
         course.name,
         "active"
-      )
+      ))
     ) {
       return response
-        .status(200)
-        .json({ message: "Course successfully added" })
+        .status(500)
+        .json({ message: "course already exist !!" })
         .end();
     }
     console.log("register 5");
-    return response.status(500).json({message:"course already exist !!"}).end();
+
+    // 4 - add final exam to assignments
+    await assignment.assign(response.locals.user.id, course.name);
+    
+    return response
+      .status(200)
+      .json({ message: "Course successfully added" })
+      .end();
     // await courseModule.insert(response, courseData);
   } catch (err) {
     console.log(err);

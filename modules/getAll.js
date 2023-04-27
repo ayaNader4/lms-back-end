@@ -29,6 +29,14 @@ const courses = async (response, searchReq) => {
   return courses;
 };
 
+const assignments = async (user_id) => {
+  const assignments = await query(
+    "SELECT * FROM courses JOIN assignments ON courses.name = assignments.course_name JOIN user_affiliation ON courses.name = user_affiliation.course_name WHERE user_affiliation.user_id = ? ",
+    user_id
+  );
+  return assignments;
+};
+
 const registeredCourses = async (id) => {
   const courses = await query(
     "SELECT * FROM courses JOIN user_affiliation ON courses.name = user_affiliation.course_name WHERE user_id = ? AND user_affiliation.status = 'active'",
@@ -45,30 +53,33 @@ const passedCourses = async (id) => {
 
   return courses;
 };
+
 //Teached Courses
-const TeachingCourses = async (id) => {
+const teachingCourses = async (id) => {
   const courses = await query(
-    "SELECT * FROM user JOIN user_affiliation ON courses.name = user_affiliation.course_name WHERE user_id = ? AND user_affiliation.status = 'Teaching'",
+    "SELECT * FROM courses JOIN user_affiliation ON courses.name = user_affiliation.course_name WHERE user_id = ? AND user_affiliation.status = 'Teaching'",
     id
   );
 
   return courses;
 };
+
 // get all students in each course
 const courseStudents = async (name) => {
   const students = await query(
-    "SELECT * FROM `users` JOIN user_affiliation ON users.id = user_affiliation.user_id WHERE user_affiliation.course_name = ?  AND user_affiliation.status='active",name
-  
+    "SELECT * FROM users JOIN user_affiliation ON users.id = user_affiliation.user_id WHERE user_affiliation.course_name = ?  AND user_affiliation.status='active'",
+    name
   );
+  return students;
 };
 
 module.exports = {
   instructors,
   students,
   courses,
-  registeredCourses: registeredCourses,
+  assignments,
+  registeredCourses,
   passedCourses,
-  TeachingCourses,
+  teachingCourses,
   courseStudents,
-  
 };
