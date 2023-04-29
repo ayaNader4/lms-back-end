@@ -16,6 +16,7 @@ const getAll = require("../../modules/getAll");
 const coursePrerequisite = require("../../modules/coursePrequisite");
 const { Console } = require("console");
 const assignment = require("../../modules/assignment");
+const userAffiliation = require("../../modules/userAffiliation");
 
 // GET TEACHING COURSES
 router.get("/courses", authorized, instructor, async (request, response) => {
@@ -76,8 +77,8 @@ router.post(
     .isLength({ min: 2, max: 30 })
     .withMessage("Name should be within 5-30 characters"),
   body("details")
-    .isLength({ min: 5, max: 100 })
-    .withMessage("Password should be within 7-100 characters"),
+    .isLength({ min: 1, max: 100 })
+    .withMessage("Details should be within 5-100 characters"),
   body("total_grade").isInt().withMessage("Enter a valid Grade"),
   async (request, response) => {
     try {
@@ -99,7 +100,8 @@ router.post(
       }
       const course_name = course.name;
       console.log("course done");
-      //Check if assigment is already exists...
+
+      // Check if assigment is already exists...
       const assign = await assignment.check(
         response,
         course_name,
@@ -137,19 +139,40 @@ router.post(
 
 // DELETE Assignment
 router.delete(
-  "/delete/:id",
+  "/delete/:id", //?assignment_id =
   authorized,
   instructor,
   async (request, response) => {
     try {
-      // 1 - check if assignment exists or not
-      const assign = await assignment.find(response, request.params.id);
+      // 1- Check if course exists
+      const course = await courseModule.find(response, request.params.id);
+      if (!course.id) {
+        return;
+      }
+
+      // 2 - check if instructor teaches course
+      const instructor = await userAffiliation.check(
+        response,
+        response.locals.user.id,
+        course.name,
+        "teaching"
+      );
+      if (!instructor)
+        return response.status(404).json({ message: "User not affiliated!" });
+
+      // 3 - check if assignment exists or not
+      let assignment_id = parseInt(request.query.assignment_id);
+      const assign = await assignment.find(
+        response,
+        assignment_id,
+        course.name
+      );
       if (!assign.id) {
         return;
       }
 
-      // 2 - delete assignment from DB
-      await assignment.remove(response, request.params.id);
+      // 4 - delete assignment from DB
+      await assignment.remove(response, assignment_id);
 
       return;
     } catch (err) {
@@ -161,7 +184,7 @@ router.delete(
 
 // UPDATE
 router.put(
-  "/update/:id",
+  "/update/:id", // ?assignment_id =
   authorized,
   instructor,
   body("name")
@@ -179,15 +202,29 @@ router.put(
       const errors = validate(request, response);
       if (errors) return;
 
-      // 3- Check if course exists
+      // 1- Check if course exists
       const course = await courseModule.find(response, request.params.id);
       if (!course.id) {
         return;
       }
 
-      assign_id = parseInt(request.query.assign_id);
+      // 2 - check if instructor teaches course
+      const instructor = userAffiliation.check(
+        response,
+        response.locals.user.id,
+        course.name,
+        "teaching"
+      );
+      if (!instructor)
+        return response.status(404).json({ message: "User not affiliated!" });
+
+      let assignment_id = parseInt(request.query.assignment_id);
       // 4 - check if assignment exists or not
-      const assign = await assignment.find(response, assign_id);
+      const assign = await assignment.find(
+        response,
+        assignment_id,
+        course.name
+      );
       if (!assign.id) {
         return;
       }
@@ -201,9 +238,11 @@ router.put(
       };
 
       // insert course object into db
-      await assignment.update(response, assignData, assign_id);
+      await assignment.update(response, assignData, assignment_id);
 
-      return;
+      return response.status(200).json({
+        message: "Assignment updated successfully",
+      });
     } catch (err) {
       console.log(err);
       response.status(500).json(err);

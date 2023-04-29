@@ -25,8 +25,8 @@ const remove = async (response, id) => {
   });
 };
 
-const update = async (response, userData, id) => {
-  await query("update users set ? where id=?", [userData, id]);
+const update = async (response, userData) => {
+  await query("update users set ? where email=?", [userData, userData.email]);
   return;
   //   return response.status(200).json({
   //     msg: "user updated successfully",

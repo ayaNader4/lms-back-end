@@ -63,7 +63,8 @@ router.post(
           response,
           userData.token,
           request.body.courses,
-          "teaching"
+          "teaching",
+          100
         );
       }
 
@@ -115,7 +116,6 @@ router.put(
   "/update-instructor/:id",
   authorized,
   admin, //to access form-data
-  body("email").isEmail().withMessage("Enter a valid email"),
   body("name")
     .isString()
     .withMessage("Enter a valid name")
@@ -143,7 +143,7 @@ router.put(
       // 3 - Prepare instructor object
       const instructorData = {
         name: request.body.name,
-        email: request.body.email,
+        email: user.email,
         phone: request.body.phone,
         password: await bcrypt.hash(request.body.password, 10),
         type: "instructor",
@@ -151,14 +151,14 @@ router.put(
       };
 
       // insert user object into db
-      await userModule.update(response, instructorData, request.params.id);
+      await userModule.update(response, instructorData);
 
       // insert user's affiliation with the course
-      await userAffiliation.update(
-        response,
-        request.params.id,
-        request.body.courses
-      );
+      const instructorAffiliation = {
+        id: request.params.id,
+        course_name: request.body.courses,
+      };
+      await userAffiliation.update(response, instructorAffiliation);
 
       return response
         .status(200)

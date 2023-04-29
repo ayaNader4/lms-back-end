@@ -23,21 +23,23 @@ router.get(
       if (errors) return;
 
       // 2 - check if e-mail exists
-      if (await checkEmail.NotExists(response, request.body.email)) {
+      const email = await checkEmail.NotExists(response, request.body.email)
+      if (email) {
         return;
       }
 
       // 3 - compare hashed password
-      const pass = await checkPassword(
+      const user = await checkPassword(
         request.body.password,
         response,
         request.body.email
       );
-      if (!pass) return;
+      if (!user) return response.status(404).json({
+        message: "E-mail or password not found",
+      });
 
       // he wants to add a response here
       return response.status(200).json(user);
-
     } catch (err) {
       console.log(err);
       return response.status(500).json({ err: err });
@@ -70,7 +72,8 @@ router.post(
       if (errors) return;
 
       // 2 - check if e-mail exists
-      if (await checkEmail.Exists(response, request.body.email)) return;
+      const email = await checkEmail.NotExists(response, request.body.email);
+      if (email) return;
 
       // 3 - prepare object user to save
       const userData = {
@@ -83,7 +86,7 @@ router.post(
       };
 
       // insert user object into db
-      await userModule.insert(response, userData);
+      await userModule.update(response, userData);
 
       // return user
       return response.status(200).json(userData);

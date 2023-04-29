@@ -79,7 +79,7 @@ router.post(
           instructor.token,
           request.body.name,
           "teaching",
-          null
+          100
         );
       }
       // 9 - insert final & midterm exams into assignments

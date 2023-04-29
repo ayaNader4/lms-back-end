@@ -4,6 +4,7 @@ const { body } = require("express-validator");
 const util = require("util");
 const crypto = require("crypto");
 const authorized = require("../../middleware/authorize");
+const student = require("../../middleware/student");
 const validate = require("../../modules/validate");
 const bcrypt = require("bcrypt");
 const checkEmail = require("../../modules/checkEmail.js");
@@ -18,7 +19,7 @@ const assignment = require("../../modules/assignment");
 
 // STUDENTS
 // GET ALL COURSES
-router.get("/courses", authorized, async (request, response) => {
+router.get("/courses", authorized, student, async (request, response) => {
   try {
     // 1 - get all courses from DB
     const courses = await getAll.courses(
@@ -44,12 +45,11 @@ router.get("/courses", authorized, async (request, response) => {
 });
 
 // SHOW SPECIFIC COURSE
-router.get("/course/:id", authorized, async (request, response) => {
+router.get("/course/:id", authorized, student, async (request, response) => {
   try {
     // 1 - check if course exists or not
     const course = await courseModule.find(response, request.params.id);
     if (!course.id) return;
-
     // 2 - convert image_url to a full url
     if (course.image_url)
       course.image_url =
@@ -58,14 +58,20 @@ router.get("/course/:id", authorized, async (request, response) => {
     // 3 - get assignments
     let assignments;
 
-    const isCourseTaken = await userAffiliation.check(response);
+    const isCourseTaken = await userAffiliation.check(
+      response,
+      response.locals.user.id,
+      course.name,
+      "active"
+    );
+    console.log(isCourseTaken);
     if (isCourseTaken) {
       assignments = await getAll.studentAssignments(
         response.locals.user.id,
         course.name
       );
     }
-    
+
     // 4 - return course
     return response
       .status(200)
@@ -77,12 +83,12 @@ router.get("/course/:id", authorized, async (request, response) => {
 });
 
 // REGISTER COURSE
-router.post("/course/:id", authorized, async (request, response) => {
+router.post("/course/:id", authorized, student, async (request, response) => {
   try {
     // 1 - check if course exists or not
     const course = await courseModule.find(response, request.params.id);
     if (!course.id) return;
-    
+
     // 2 - check if user can register course (pre-requisites)
     const prerequisite = await IsEligible(
       response,
@@ -90,25 +96,41 @@ router.post("/course/:id", authorized, async (request, response) => {
       request.params.id
     );
     if (prerequisite) return;
-    
-    // 3- insert course object into db
-    if (
-      !(await userAffiliation.insert(
-        response,
-        response.locals.user.token,
-        course.name,
-        "active"
-      ))
-    ) {
-      return response
-        .status(500)
-        .json({ message: "Course already exists!" })
-        .end();
-    }
-    
+
+    // 3 - check if student registered the course previously
+    const affiliationExists = await userAffiliation.find(
+      response,
+      response.locals.user.id,
+      course.name,
+      "active"
+    );
+    if (affiliationExists) return;
+
+    // 3- insert course object into dlbo
+    await userAffiliation.insert(
+      response,
+      response.locals.user.token,
+      course.name,
+      "active"
+    );
+
+    // 5 - get affiliation id
+    const affiliation_id = await userAffiliation.check(
+      response,
+      response.locals.user.id,
+      course.name,
+      "active"
+    );
+
     // 4 - add course assignments
-    await assignment.assign(response, response.locals.user.id, course.name);
-    
+    const assignments = await assignment.assign(
+      response,
+      response.locals.user.id,
+      course.name,
+      affiliation_id.id
+    );
+    if (assignments) return;
+
     return response
       .status(200)
       .json({ message: "Course successfully added" })

@@ -37,7 +37,7 @@ const IsEligible = async (response, user_id, course_id) => {
   // console.log(course_name.name);
   // console.log(prerequisite[0].prerequisite);
   // console.log(status[0].status);
-
+  //?
   prereq: if (prerequisite[0].prerequisite) {
     if (!status[0]) {
       break prereq;

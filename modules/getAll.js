@@ -28,7 +28,23 @@ const courses = async (response, id, searchReq, typeReq) => {
   } else if (searchReq) {
     search = `where name LIKE '%${searchReq}%'`;
   }
-  if (typeReq) {
+
+  if (typeReq == "available") {
+    const courses = await query(
+      `select * from courses 
+      join user_affiliation on courses.prerequisite = user_affiliation.course_name 
+      where user_affiliation.status = "passed" 
+      UNION
+      select * from courses
+      join user_affiliation on courses.name = user_affiliation.course_name 
+      where courses.prerequisite is null and courses.name not in (
+          select courses.name from courses 
+          join user_affiliation on courses.name = user_affiliation.course_name 	
+          where user_affiliation.user_id = ? )`,
+      id
+    );
+    return courses;
+  } else if (typeReq) {
     type = ` where user_affiliation.user_id=${id} and user_affiliation.status LIKE '%${typeReq}%'  `;
   }
   const courses = await query(
