@@ -32,8 +32,8 @@ router.post(
     .withMessage("Enter a valid phone number")
     .isLength({ min: 11, max: 11 })
     .withMessage("Phone number should be 11 digits"),
-  body("courses").isString(),
 
+  // ADD INSTRUCTOR
   async (request, response) => {
     try {
       // 1 - validate request (manual, express validation)
@@ -58,12 +58,15 @@ router.post(
       await userModule.insert(response, userData);
 
       // insert user's affiliation with the course
-      await userAffiliation.insert(
-        response,
-        userData.token,
-        request.body.courses,
-        "teaching"
-      );
+      if (request.body.courses) {
+        await userAffiliation.insert(
+          response,
+          userData.token,
+          request.body.courses,
+          "teaching"
+        );
+      }
+
       return response
         .status(200)
         .json({ message: "Instructor inserted sucessfully!" });
@@ -106,7 +109,6 @@ router.get("/", authorized, admin, async (request, response) => {
     return response.status(400).json(err);
   }
 });
-
 
 // UPDATE
 router.put(

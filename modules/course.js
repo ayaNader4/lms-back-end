@@ -2,7 +2,7 @@ const util = require("util");
 const connection = require("../db/dbConnection");
 const query = util.promisify(connection.query).bind(connection);
 
-const insert = async (response, courseData) => {
+const insert = async (courseData) => {
   const user = await query("insert into courses set ?", courseData);
   delete courseData.password;
   return;
@@ -19,7 +19,10 @@ const find = async (response, id) => {
 };
 
 const check = async (response, code, name) => {
-  const course = await query("select * from courses where code = ? or name = ?", [code, name]);
+  const course = await query(
+    "select * from courses where code = ? or name = ?",
+    [code, name]
+  );
   if (course[0]) {
     return response.status(404).json({ message: "Course already exists" });
   }
@@ -36,9 +39,7 @@ const remove = async (response, id) => {
 const update = async (response, courseData, id) => {
   await query("update courses set ? where id=?", [courseData, id]);
 
-  return response.status(200).json({
-    message: "Course updated successfully",
-  });
+  return;
 };
 
 module.exports = { remove, find, insert, update, check };

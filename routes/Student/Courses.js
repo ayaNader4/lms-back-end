@@ -15,57 +15,24 @@ const getAll = require("../../modules/getAll");
 const { IsEligible } = require("../../modules/coursePrequisite");
 const userAffiliation = require("../../modules/userAffiliation");
 const assignment = require("../../modules/assignment");
+
 // STUDENTS
 // GET ALL COURSES
-router.get("/courses", async (request, response) => {
+router.get("/courses", authorized, async (request, response) => {
   try {
     // 1 - get all courses from DB
-    const courses = await getAll.courses(response, request.query.search);
+    const courses = await getAll.courses(
+      response,
+      response.locals.user.id,
+      request.query.search,
+      request.query.type
+    );
 
     // 2 - convert image_url to full url
     courses.map((course) => {
       course.image_url =
         "http://" + request.hostname + ":4000/" + course.image_url;
-    });
-
-    // 3 - return courses
-    return response.status(200).json(courses);
-  } catch (err) {
-    console.log(err);
-    return response.status(400).json(err);
-  }
-});
-
-// GET ALL REGISTERED COURSES
-router.get("/registered-courses", authorized, async (request, response) => {
-  try {
-    // 1 - get all courses from DB
-    const courses = await getAll.registeredCourses(response.locals.user.id);
-
-    // 2 - convert image_url to full url
-    courses.map((course) => {
-      course.image_url =
-        "http://" + request.hostname + ":4000/" + course.image_url;
-    });
-
-    // 3 - return courses
-    return response.status(200).json(courses);
-  } catch (err) {
-    console.log(err);
-    return response.status(400).json(err);
-  }
-});
-
-// GET ALL PASSED COURSES
-router.get("/passed-courses", authorized, async (request, response) => {
-  try {
-    // 1 - get all courses from DB
-    const courses = await getAll.passedCourses(response.locals.user.id);
-
-    // 2 - convert image_url to full url
-    courses.map((course) => {
-      course.image_url =
-        "http://" + request.hostname + ":4000/" + course.image_url;
+      delete course.total_grade;
     });
 
     // 3 - return courses
@@ -77,7 +44,7 @@ router.get("/passed-courses", authorized, async (request, response) => {
 });
 
 // SHOW SPECIFIC COURSE
-router.get("/course/:id", async (request, response) => {
+router.get("/course/:id", authorized, async (request, response) => {
   try {
     // 1 - check if course exists or not
     const course = await courseModule.find(response, request.params.id);
@@ -88,8 +55,21 @@ router.get("/course/:id", async (request, response) => {
       course.image_url =
         "https://" + request.hostname + ":4000/" + course.image_url;
 
-    // 3 - return course
-    return response.status(200).json(course);
+    // 3 - get assignments
+    let assignments;
+
+    const isCourseTaken = await userAffiliation.check(response);
+    if (isCourseTaken) {
+      assignments = await getAll.studentAssignments(
+        response.locals.user.id,
+        course.name
+      );
+    }
+    
+    // 4 - return course
+    return response
+      .status(200)
+      .json({ course: course, assignments: assignments });
   } catch (err) {
     console.log(err);
     return response.status(400).json(err);
@@ -102,8 +82,7 @@ router.post("/course/:id", authorized, async (request, response) => {
     // 1 - check if course exists or not
     const course = await courseModule.find(response, request.params.id);
     if (!course.id) return;
-    console.log("register 3");
-
+    
     // 2 - check if user can register course (pre-requisites)
     const prerequisite = await IsEligible(
       response,
@@ -111,8 +90,7 @@ router.post("/course/:id", authorized, async (request, response) => {
       request.params.id
     );
     if (prerequisite) return;
-    console.log("register 4");
-
+    
     // 3- insert course object into db
     if (
       !(await userAffiliation.insert(
@@ -124,13 +102,12 @@ router.post("/course/:id", authorized, async (request, response) => {
     ) {
       return response
         .status(500)
-        .json({ message: "course already exist !!" })
+        .json({ message: "Course already exists!" })
         .end();
     }
-    console.log("register 5");
-
-    // 4 - add final exam to assignments
-    await assignment.assign(response.locals.user.id, course.name);
+    
+    // 4 - add course assignments
+    await assignment.assign(response, response.locals.user.id, course.name);
     
     return response
       .status(200)

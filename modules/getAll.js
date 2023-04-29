@@ -20,12 +20,20 @@ const students = async (response, searchReq) => {
   return students;
 };
 
-const courses = async (response, searchReq) => {
+const courses = async (response, id, searchReq, typeReq) => {
   let search = "";
-  if (searchReq) {
-    search += `where name LIKE '%${searchReq}%''`;
+  let type = "";
+  if (searchReq && typeReq) {
+    search = `and courses.name LIKE '%${searchReq}%'`;
+  } else if (searchReq) {
+    search = `where name LIKE '%${searchReq}%'`;
   }
-  const courses = await query(`select * from courses ${search}`);
+  if (typeReq) {
+    type = ` where user_affiliation.user_id=${id} and user_affiliation.status LIKE '%${typeReq}%'  `;
+  }
+  const courses = await query(
+    `select name, code, description, image_url, total_grade, courses.id from courses join user_affiliation on courses.name=user_affiliation.course_name ${type} ${search}`
+  );
   return courses;
 };
 
@@ -67,10 +75,26 @@ const teachingCourses = async (id) => {
 // get all students in each course
 const courseStudents = async (name) => {
   const students = await query(
-    "SELECT * FROM users JOIN user_affiliation ON users.id = user_affiliation.user_id WHERE user_affiliation.course_name = ?  AND user_affiliation.status='active'",
+    "SELECT users.id as user_id, users.name, user_affiliation.course_name, user_affiliation.total_grade FROM users JOIN user_affiliation ON users.id = user_affiliation.user_id WHERE user_affiliation.course_name = ?  AND user_affiliation.status='active'",
     name
   );
   return students;
+};
+
+const studentAssignments = async (user_id, course_name) => {
+  const assignments = await query(
+    "SELECT assignments.name, details, grade, assignments.total_grade FROM user_assignments JOIN assignments ON user_assignments.assignment_id = assignments.id WHERE user_assignments.user_id = ? AND assignments.course_name = ?",
+    [user_id, course_name]
+  );
+  return assignments;
+};
+
+const courseAssignments = async (course_name) => {
+  const assignments = await query(
+    "SELECT * FROM `assignments` WHERE course_name =?",
+    [course_name]
+  );
+  return assignments;
 };
 
 module.exports = {
@@ -82,4 +106,6 @@ module.exports = {
   passedCourses,
   teachingCourses,
   courseStudents,
+  studentAssignments,
+  courseAssignments,
 };

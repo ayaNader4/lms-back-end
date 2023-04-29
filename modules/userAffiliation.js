@@ -3,12 +3,7 @@ const util = require("util");
 const query = util.promisify(connection.query).bind(connection); // transforms mysql queries to promises so we can use async/await
 
 const insert = async (response, token, course_name, status) => {
-  // get course id
-  // const course = await query("select id from courses where name = ?", [
-  //   course_name,
-  // ]);
-
-  // get user id
+ 
   const user = await query("select id from users where token = ?", [token]);
 
   // insert the pair into user_affiliation
@@ -26,31 +21,28 @@ const insert = async (response, token, course_name, status) => {
   }
 
   return;
-  // return response
-  //   .status(200)
-  //   .json({ message: "User affiliation inserted successfully" });
   // // it only inserts a single course, need to figure out how we would receive multiple courses from the front-end and insert them
-  //return response.status(200).json({ course: course, user: user });
 };
 
 const update = async (response, id, course_name) => {
-  // get course id
-  // const course = await query("select id from courses where name = ?", [
-  //   course_name,
-  // ]);
-
   // insert the pair into user_affiliation
   const us = await query("update user_affiliation set ? where user_id = ?", [
     { user_id: id, course_name: course_name },
     id,
   ]);
 
-  console.log(us);
-  return response
-    .status(200)
-    .json({ message: "User affiliation updated successfully" });
+  return;
   // it only inserts a single course, need to figure out how we would receive multiple courses from the front-end and insert them
-  //return response.status(200).json({ course: course, user: user });
 };
 
-module.exports = { insert, update };
+const check = async (response, user_id, course_name) => {
+  // insert the pair into user_affiliation
+  const course_taken = await query(
+    "select * from user_affiliation where user_id = ? and course_name = ? and status = 'active'",
+    [user_id, course_name]
+  );
+
+  return course_taken;
+};
+
+module.exports = { insert, update, check };

@@ -15,6 +15,7 @@ const search = require("../../modules/search");
 const getAll = require("../../modules/getAll");
 const coursePrerequisite = require("../../modules/coursePrequisite");
 const { Console } = require("console");
+const assignment = require("../../modules/assignment");
 
 // GET TEACHING COURSES
 router.get("/courses", authorized, instructor, async (request, response) => {
@@ -28,38 +29,35 @@ router.get("/courses", authorized, instructor, async (request, response) => {
         "http://" + request.hostname + ":4000/" + course.image_url;
     });
 
-    // 3 - get assignments
-    const assignments = await getAll.assignments(response.locals.user.id);
-
     // 4 - return courses & assignments
-    return response
-      .status(200)
-      .json({ courses: courses, assignments: assignments });
+    return response.status(200).json(courses);
   } catch (err) {
     console.log(err);
     return response.status(400).json(err);
   }
 });
 
-// GET STUDENTS
+//GET COURSE ASSIGNMENTS...
 router.get(
-  "/course-students/:id",
+  "/courses/:course_id",
   authorized,
   instructor,
   async (request, response) => {
     try {
-      // 1 - get course from DB;
-      const course = await courseModule.find(response, request.params.id);
+      const course = await courseModule.find(
+        response,
+        request.params.course_id
+      );
       if (!course.id) {
         return;
       }
-      console.log(course.name);
+      const course_name = course.name;
 
-      // 2 get students of the course
-      const students = await getAll.courseStudents(course.name);
+      // 3 - get assignments
+      const assignments = await getAll.courseAssignments(course_name);
 
-      // 3 - return the course Students
-      return response.status(200).json(students);
+      // 4 - return courses & assignments
+      return response.status(200).json(assignments);
     } catch (err) {
       console.log(err);
       return response.status(400).json(err);
@@ -67,6 +65,150 @@ router.get(
   }
 );
 
-// SET ASSIGNMENT GRADE
+// ADD ASSIGNMENT
+router.post(
+  "/add-assignments/:id",
+  authorized,
+  instructor,
+  body("name")
+    .isString()
+    .withMessage("Enter a valid name")
+    .isLength({ min: 2, max: 30 })
+    .withMessage("Name should be within 5-30 characters"),
+  body("details")
+    .isLength({ min: 5, max: 100 })
+    .withMessage("Password should be within 7-100 characters"),
+  body("total_grade").isInt().withMessage("Enter a valid Grade"),
+  async (request, response) => {
+    try {
+      // 1 - validate request (manual, express validation)
+      const errors = validate(request, response);
+      if (errors) return;
+
+      // 2 - check if grade is valid exists
+      // const total_grade = request.body.total_grade;
+      // isPositive = await isPositive(total_grade);
+      // if (!isPositive) {
+      //   return response.status(400).json("Enter a valid Grade");
+      // }
+      console.log("done");
+      // Check if course exists
+      const course = await courseModule.find(response, request.params.id);
+      if (!course.id) {
+        return;
+      }
+      const course_name = course.name;
+      console.log("course done");
+      //Check if assigment is already exists...
+      const assign = await assignment.check(
+        response,
+        course_name,
+        request.body.name
+      );
+      if (assign) {
+        return;
+      }
+
+      console.log("done2");
+      // 3 - prepare object user to save
+      const assignData = [
+        [
+          request.body.name,
+          request.body.details,
+          request.body.total_grade,
+          course_name,
+        ],
+      ];
+      console.log("done3");
+
+      // insert user object into db
+      await assignment.insert(assignData);
+      console.log("done4");
+
+      return response
+        .status(200)
+        .json({ message: "Assignment inserted sucessfully!" });
+    } catch (err) {
+      //console.log(err);
+      return response.status(500).json({ err: err });
+    }
+  }
+);
+
+// DELETE Assignment
+router.delete(
+  "/delete/:id",
+  authorized,
+  instructor,
+  async (request, response) => {
+    try {
+      // 1 - check if assignment exists or not
+      const assign = await assignment.find(response, request.params.id);
+      if (!assign.id) {
+        return;
+      }
+
+      // 2 - delete assignment from DB
+      await assignment.remove(response, request.params.id);
+
+      return;
+    } catch (err) {
+      console.log(err);
+      return response.status(500).json(err);
+    }
+  }
+);
+
+// UPDATE
+router.put(
+  "/update/:id",
+  authorized,
+  instructor,
+  body("name")
+    .isString()
+    .withMessage("Enter a valid name")
+    .isLength({ min: 2, max: 30 })
+    .withMessage("Name should be within 5-30 characters"),
+  body("details")
+    .isLength({ min: 5, max: 100 })
+    .withMessage("Details should be within 5-100 characters"),
+  body("total_grade").isInt().withMessage("Enter a valid Grade"),
+  async (request, response) => {
+    try {
+      // 1 - validate request (manual, express validation)
+      const errors = validate(request, response);
+      if (errors) return;
+
+      // 3- Check if course exists
+      const course = await courseModule.find(response, request.params.id);
+      if (!course.id) {
+        return;
+      }
+
+      assign_id = parseInt(request.query.assign_id);
+      // 4 - check if assignment exists or not
+      const assign = await assignment.find(response, assign_id);
+      if (!assign.id) {
+        return;
+      }
+
+      // 5 - Prepare assignment object
+      const assignData = {
+        name: request.body.name,
+        details: request.body.details,
+        total_grade: request.body.total_grade,
+        course_name: course.name,
+      };
+
+      // insert course object into db
+      await assignment.update(response, assignData, assign_id);
+
+      return;
+    } catch (err) {
+      console.log(err);
+      response.status(500).json(err);
+    }
+  }
+);
 
 module.exports = router;

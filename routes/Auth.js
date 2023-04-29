@@ -34,6 +34,10 @@ router.get(
         request.body.email
       );
       if (!pass) return;
+
+      // he wants to add a response here
+      return response.status(200).json(user);
+
     } catch (err) {
       console.log(err);
       return response.status(500).json({ err: err });
@@ -80,6 +84,8 @@ router.post(
 
       // insert user object into db
       await userModule.insert(response, userData);
+
+      // return user
       return response.status(200).json(userData);
     } catch (err) {
       console.log(err);
