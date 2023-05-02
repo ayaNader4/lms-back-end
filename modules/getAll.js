@@ -22,71 +22,10 @@ const students = async (response, searchReq) => {
 
 const courses = async (response, id, searchReq, typeReq) => {
   let search = "";
-  let type = "";
-  if (searchReq && typeReq) {
-    search = `and courses.name LIKE '%${searchReq}%'`;
-  } else if (searchReq) {
-    search = `where name LIKE '%${searchReq}%'`;
+  if (searchReq) {
+    search += `where name LIKE '%${searchReq}%''`;
   }
-
-  if (typeReq == "available") {
-    const courses = await query(
-      `select * from courses 
-      join user_affiliation on courses.prerequisite = user_affiliation.course_name 
-      where user_affiliation.status = "passed" 
-      UNION
-      select * from courses
-      join user_affiliation on courses.name = user_affiliation.course_name 
-      where courses.prerequisite is null and courses.name not in (
-          select courses.name from courses 
-          join user_affiliation on courses.name = user_affiliation.course_name 	
-          where user_affiliation.user_id = ? )
-      group by courses.name`,
-      id
-    );
-    return courses;
-  } else if (typeReq) {
-    type = ` where user_affiliation.user_id=${id} and user_affiliation.status LIKE '%${typeReq}%'  `;
-  }
-  const courses = await query(
-    `select name, code, description, image_url, total_grade, courses.id from courses join user_affiliation on courses.name=user_affiliation.course_name ${type} ${search} group by name`
-  );
-  return courses;
-};
-
-const assignments = async (user_id) => {
-  const assignments = await query(
-    "SELECT * FROM courses JOIN assignments ON courses.name = assignments.course_name JOIN user_affiliation ON courses.name = user_affiliation.course_name WHERE user_affiliation.user_id = ? ",
-    user_id
-  );
-  return assignments;
-};
-
-const registeredCourses = async (id) => {
-  const courses = await query(
-    "SELECT * FROM courses JOIN user_affiliation ON courses.name = user_affiliation.course_name WHERE user_id = ? AND user_affiliation.status = 'active'",
-    id
-  );
-
-  return courses;
-};
-
-const passedCourses = async (id) => {
-  const courses = await query(
-    "SELECT * FROM courses JOIN user_affiliation ON courses.name = user_affiliation.course_name WHERE user_id = ? AND user_affiliation.status = 'passed'",
-    id
-  );
-
-  return courses;
-};
-
-//Teached Courses
-const teachingCourses = async (id) => {
-  const courses = await query(
-    "SELECT * FROM courses JOIN user_affiliation ON courses.name = user_affiliation.course_name WHERE user_id = ? AND user_affiliation.status = 'Teaching'",
-    id
-  );
-
+  const courses = await query(`select * from courses ${search}`);
   return courses;
 };
 
