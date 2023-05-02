@@ -4,8 +4,8 @@ const validate = (request, response) => {
   const errors = validationResult(request);
   if (!errors.isEmpty()) {
     return response
-      .status(400)
-      .json({ errors: errors.array(), msg: "validation error" });
+      .status(403)
+      .json({ errors: errors.array(), message: "Validation error" });
   }
 };
 

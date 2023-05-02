@@ -10,7 +10,7 @@ const authorized = async (request, response, next) => {
     next();
   } else {
     response.status(403).json({
-      msg: "You are not authorized to access this route",
+      message: "You are not authorized to access this route",
     });
   }
 };

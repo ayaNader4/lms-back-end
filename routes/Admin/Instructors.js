@@ -32,8 +32,8 @@ router.post(
     .withMessage("Enter a valid phone number")
     .isLength({ min: 11, max: 11 })
     .withMessage("Phone number should be 11 digits"),
-  body("courses").isString(),
 
+  // ADD INSTRUCTOR
   async (request, response) => {
     try {
       // 1 - validate request (manual, express validation)
@@ -58,13 +58,19 @@ router.post(
       await userModule.insert(response, userData);
 
       // insert user's affiliation with the course
-      await userAffiliation.insert(
-        response,
-        userData.token,
-        request.body.courses,
-        "teaching"
-      );
-      return;
+      if (request.body.courses) {
+        await userAffiliation.insert(
+          response,
+          userData.token,
+          request.body.courses,
+          "teaching",
+          100
+        );
+      }
+
+      return response
+        .status(200)
+        .json({ message: "Instructor inserted sucessfully!" });
     } catch (err) {
       console.log(err);
       return response.status(500).json({ err: err });
@@ -101,34 +107,30 @@ router.get("/", authorized, admin, async (request, response) => {
     return response.status(200).json(instructors);
   } catch (err) {
     console.log(err);
-    return response.status(400).json(err);
+    return response.status(500).json(err);
   }
 });
-
-// router.get("/students", authorized, async (request, response) => {
-//   await getAll.students(response, request.query.search);
-// });
 
 // UPDATE
 router.put(
   "/update-instructor/:id",
   authorized,
   admin, //to access form-data
-  body("email").isEmail().withMessage("Enter a valid email"),
   body("name")
     .isString()
     .withMessage("Enter a valid name")
     .isLength({ min: 3, max: 20 })
     .withMessage("Name should be within 5-20 characters"),
   body("password")
-    .isStrongPassword()
+    .isLength({ min: 3, max: 12 })
     .withMessage("Password should be within 7-12 characters"),
   body("phone")
     .isString()
     .withMessage("Enter a valid phone number")
     .isLength({ min: 11, max: 11 })
     .withMessage("Phone number should be 11 digits"),
-  body("courses").isString(),
+  body("old_course").isString(),
+  body("new_course").isString(),
   async (request, response) => {
     try {
       // 1 - validate request (manual, express validation)
@@ -142,7 +144,7 @@ router.put(
       // 3 - Prepare instructor object
       const instructorData = {
         name: request.body.name,
-        email: request.body.email,
+        email: user.email,
         phone: request.body.phone,
         password: await bcrypt.hash(request.body.password, 10),
         type: "instructor",
@@ -150,15 +152,22 @@ router.put(
       };
 
       // insert user object into db
-      await userModule.update(response, instructorData, request.params.id);
+      await userModule.update(response, instructorData);
 
       // insert user's affiliation with the course
+      const instructorAffiliation = {
+        id: request.params.id,
+        course_name: request.body.new_course,
+      };
       await userAffiliation.update(
         response,
-        request.params.id,
-        request.body.courses
+        instructorAffiliation,
+        request.body.old_course
       );
-      return;
+
+      return response
+        .status(200)
+        .json({ message: "Instructor successfully updated!" });
     } catch (err) {
       console.log(err);
       response.status(500).json(err);
