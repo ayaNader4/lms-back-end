@@ -156,18 +156,19 @@ router.put(
 
       // insert user's affiliation with the course
       const instructorAffiliation = {
-        id: request.params.id,
         course_name: request.body.new_course,
       };
-      await userAffiliation.update(
+
+      const updated_affiliation = await userAffiliation.update(
         response,
         instructorAffiliation,
+        request.params.id,
         request.body.old_course
       );
 
       return response
         .status(200)
-        .json({ message: "Instructor successfully updated!" });
+        .json({ message: "Instructor successfully updated!", instructor: {name: instructorData.name, phone: instructorData.phone}});
     } catch (err) {
       console.log(err);
       response.status(500).json(err);

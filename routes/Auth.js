@@ -83,6 +83,7 @@ router.post(
         phone: request.body.phone,
         password: await bcrypt.hash(request.body.password, 10),
         token: crypto.randomBytes(16).toString("hex"),
+        type:"student"
         // json web token is too complicated, we'll use crypto which is a ran
       };
 

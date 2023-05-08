@@ -4,7 +4,6 @@ const query = util.promisify(connection.query).bind(connection);
 
 const insert = async (courseData) => {
   const user = await query("insert into courses set ?", courseData);
-  delete courseData.password;
   return;
   // return response.status(200).json(userData);
 };

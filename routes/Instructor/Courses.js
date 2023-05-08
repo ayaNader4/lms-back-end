@@ -52,7 +52,6 @@ router.get(
       if (!course.id) {
         return;
       }
-      const course_name = course.name;
 
       // 2 - convert image_url to a full url
       if (course.image_url)
@@ -60,7 +59,7 @@ router.get(
           "http://" + request.hostname + ":4000/" + course.image_url;
 
       // 3 - get assignments
-      const assignments = await getAll.courseAssignments(course_name);
+      const assignments = await getAll.courseAssignments(course.name);
 
       // 4 - return courses & assignments
       return response
@@ -96,11 +95,6 @@ router.post(
       if (errors) return;
 
       // 2 - check if grade is valid exists
-      // const total_grade = request.body.total_grade;
-      // isPositive = await isPositive(total_grade);
-      // if (!isPositive) {
-      //   return response.status(400).json("Enter a valid Grade");
-      // }
       console.log("done");
       // Check if course exists
       const course = await courseModule.find(response, request.params.id);
@@ -133,10 +127,10 @@ router.post(
       console.log("done3");
 
       // insert user object into db
-      await assignment.insert(assignData);
+      const addedAssignment = await assignment.insert(assignData);
       console.log("done4");
 
-      await assignment.assignAll(response, course_name, "active");
+      await assignment.assignAll(response, course_name, addedAssignment.id, "active");
 
       return response
         .status(200)
@@ -172,10 +166,9 @@ router.delete(
         return response.status(404).json({ message: "User not affiliated!" });
 
       // 3 - check if assignment exists or not
-      let assignment_id = parseInt(request.query.assignment_id);
       const assign = await assignment.find(
         response,
-        assignment_id,
+        request.query.assignment_id,
         course.name
       );
       if (!assign.id) {
@@ -183,7 +176,7 @@ router.delete(
       }
 
       // 4 - delete assignment from DB
-      await assignment.remove(response, assignment_id);
+      await assignment.remove(response, request.query.assignment_id);
 
       return;
     } catch (err) {

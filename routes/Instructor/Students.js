@@ -73,7 +73,7 @@ router.get(
       );
 
       // 4 - return the course Students
-      return response.status(200).json(studentAssignments);
+      return response.status(200).json({ assignments: studentAssignments });
     } catch (err) {
       console.log(err);
       return response.status(500).json(err);
@@ -141,14 +141,15 @@ router.put(
       );
 
       // 6 - check if final
-      if (assignment.name == "Final Exam") {
-        await userAffiliation.applyTotalGrade(
-          response,
-          instructor.total_grade,
-          student_id,
-          course.name
-        );
-      }
+      console.log(assignment.name);
+
+      await userAffiliation.applyTotalGrade(
+        response,
+        assignment.name,
+        instructor.total_grade,
+        student_id,
+        course.name
+      );
 
       return response
         .status(200)

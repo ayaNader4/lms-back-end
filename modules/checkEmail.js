@@ -6,7 +6,7 @@ const Exists = async (response, email) => {
   const user = await query(`select * from users where email = '${email}'`);
   if (user.length != 0)
     return response.status(409).json({ message: "E-mail already exist" });
-  return;
+  return ;
 };
 
 const NotExists = async (response, email) => {

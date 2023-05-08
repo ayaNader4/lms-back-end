@@ -14,8 +14,29 @@ const coursePrerequisite = require("../../modules/coursePrequisite");
 const assignment = require("../../modules/assignment");
 const userModule = require("../../modules/user");
 const userAffiliation = require("../../modules/userAffiliation");
+const getAll = require("../../modules/getAll");
 
 // COURSES
+//GET-ALL-COURSES
+router.get("/courses", authorized, async (request, response) => {
+  try {
+    // 1 - get all courses from DB
+    const courses = await getAll.AllCourses();
+
+    // 2 - convert image_url to full url
+    courses.map((course) => {
+      course.image_url =
+        "http://" + request.hostname + ":4000/" + course.image_url;
+    });
+
+    // 3 - return courses
+    return response.status(200).json(courses);
+  } catch (err) {
+    console.log(err);
+    return response.status(500).json(err);
+  }
+});
+
 // ADD
 router.post(
   "/add-course",
@@ -85,8 +106,6 @@ router.post(
       const assignData = [
         ["Final Exam", "Final", null, courseData.name],
         ["Midterm Exam", "Midterm", null, courseData.name],
-        ["Project", "Project", null, courseData.name],
-        ["Assignment", "Assignment", null, courseData.name],
       ];
       await assignment.insert(assignData);
 
@@ -139,7 +158,7 @@ router.put(
       const course = await courseModule.find(response, request.params.id);
       if (!course.id) return;
 
-      if (course.prerequisite == request.body.prerequisite) {
+      if (course.code != request.body.code) {
         // 3 - check if code is unique or not
         const courseCode = await courseModule.check(
           response,

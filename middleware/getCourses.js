@@ -7,3 +7,4 @@ const getCourses = async (request, response, next) => {
   response.locals.courses = courses;
 };
 module.exports = getCourses;
+ 

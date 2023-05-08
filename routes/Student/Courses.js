@@ -18,7 +18,7 @@ const assignment = require("../../modules/assignment");
 
 // STUDENTS
 // GET ALL COURSES
-router.get("/courses", authorized , async (request, response) => {
+router.get("/courses", authorized, async (request, response) => {
   try {
     // 1 - get all courses from DB
     const courses = await getAll.courses(
@@ -28,7 +28,6 @@ router.get("/courses", authorized , async (request, response) => {
       request.query.type
     );
 
-    
     // 2 - convert image_url to full url
     courses.map((course) => {
       course.image_url =
@@ -55,27 +54,38 @@ router.get("/course/:id", authorized, async (request, response) => {
       course.image_url =
         "http://" + request.hostname + ":4000/" + course.image_url;
 
-    // 3 - get assignments
-    let assignments;
-
-    const isCourseTaken = await userAffiliation.check(
+    // 3 - check if student already passed
+    const isPassed = await userAffiliation.check(
       response,
       response.locals.user.id,
       course.name,
-      "active"
+      "passed"
     );
-    console.log(isCourseTaken);
-    if (isCourseTaken) {
-      assignments = await getAll.studentAssignments(
+
+    let assignments;
+    if (!isPassed) {
+      // 4 - check if already taken
+      const isCourseTaken = await userAffiliation.check(
+        response,
         response.locals.user.id,
-        course.name
+        course.name,
+        "active"
       );
+      console.log("isCourseTaken", isCourseTaken);
+
+      // 5- get assignments
+      if (isCourseTaken) {
+        assignments = await getAll.studentAssignments(
+          response.locals.user.id,
+          course.name
+        );
+      }
     }
 
     // 4 - return course
     return response
       .status(200)
-      .json({ course: course, assignments: assignments });
+      .json({ course: course, assignments: assignments, isPassed });
   } catch (err) {
     console.log(err);
     return response.status(500).json(err);

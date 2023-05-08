@@ -10,7 +10,11 @@ const insert = async (data) => {
     "insert into assignments (name, details, total_grade, course_name ) values ?",
     [data]
   );
-  return;
+  console.log(data);
+  const assignment = await query(`select * from assignments where name = ? and course_name = ?`, [data[0][0], data[0][3]])
+  
+  console.log(assignment)
+  return assignment[0];
   // return response.status(200).json(userData);
 };
 
@@ -37,25 +41,26 @@ const assign = async (response, user_id, course_name, affiliation_id) => {
   return;
 };
 
-const assignAll = async (response, course_name, status) => {
+const assignAll = async (response, course_name, assignment_id, status) => {
   const students = await query(
     "select * from user_affiliation where course_name = ? and status = ?",
     [course_name, status]
   );
 
   if (!students[0]) {
-    return response.status(404).json({ message: "No students registered" });
+    return;
   }
 
   students.map(async (student) => {
     await query("insert into user_assignments set ?", {
       affiliation_id: student.id,
       user_id: student.user_id,
-      assignment_id: assignment.id,
+      assignment_id: assignment_id,
       grade: null,
     });
   });
 };
+
 const find = async (response, id, course_name) => {
   const assignment = await query(
     "select * from assignments where id = ? and course_name = ?",
@@ -98,7 +103,7 @@ const updateGrade = async (grade, assignment_id, user_id) => {
     "update user_assignments set grade = ? where assignment_id = ? and user_id = ?",
     [grade, assignment_id, user_id]
   );
-
+  console.log("updated grade", assignment_id);
   return;
 };
 
